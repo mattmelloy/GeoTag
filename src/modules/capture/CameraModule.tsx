@@ -16,22 +16,24 @@ export function CameraModule({ onCapture, onClose }: CameraModuleProps) {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        let activeStream: MediaStream | null = null;
+
         async function setupCamera() {
             try {
-                const mediaStream = await navigator.mediaDevices.getUserMedia({
+                activeStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: 'environment', // Rear camera by default
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     }
                 });
-                setStream(mediaStream);
+                setStream(activeStream);
                 if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
+                    videoRef.current.srcObject = activeStream;
                 }
 
                 // Get track capabilities (for zoom)
-                const track = mediaStream.getVideoTracks()[0];
+                const track = activeStream.getVideoTracks()[0];
                 const caps = track.getCapabilities() as any;
                 if (caps.zoom) {
                     setCapabilities(caps);
@@ -45,8 +47,11 @@ export function CameraModule({ onCapture, onClose }: CameraModuleProps) {
         setupCamera();
 
         return () => {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => {
+                    track.stop();
+                    console.log("Stopped track:", track.label);
+                });
             }
         };
     }, []);

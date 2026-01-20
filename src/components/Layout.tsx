@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Map, Compass, Library, PlusCircle } from 'lucide-react';
+import { Map, Library, PlusCircle } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Layout() {
@@ -31,16 +31,6 @@ export function Layout() {
                     <PlusCircle size={32} strokeWidth={2.5} />
                 </NavLink>
 
-                <NavLink
-                    to="/seeker"
-                    className={({ isActive }) => clsx(
-                        "p-2 flex flex-col items-center transition-colors",
-                        isActive ? "text-[var(--color-primary)]" : "text-neutral-500 hover:text-neutral-300"
-                    )}
-                >
-                    <Compass size={24} />
-                    <span className="text-[10px] mt-1 font-medium tracking-wide">SEEKER</span>
-                </NavLink>
 
                 <NavLink
                     to="/library"

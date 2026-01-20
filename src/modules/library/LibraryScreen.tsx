@@ -95,9 +95,23 @@ export function LibraryScreen() {
                         ) : (
                             <div className="h-full flex items-center justify-center text-neutral-600 text-sm italic">No path recorded</div>
                         )}
-                        <div className="absolute bottom-4 right-4 bg-neutral-900/80 backdrop-blur px-3 py-1.5 rounded-lg border border-neutral-700 text-xs text-white font-mono flex gap-4">
-                            <div>Dist: {((selectedTrek.distance || 0) / 1000).toFixed(2)} km</div>
-                            <div>Time: {Math.floor(((selectedTrek.endTime || Date.now()) - selectedTrek.startTime) / 60000)}m</div>
+                    </div>
+
+                    {/* Stats Bar */}
+                    <div className="flex border-b border-neutral-800 bg-neutral-900/50">
+                        <div className="flex-1 p-4 border-r border-neutral-800 flex flex-col items-center">
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-1">Distance</span>
+                            <span className="text-xl font-mono text-white leading-none">
+                                {((selectedTrek.distance || 0) / 1000).toFixed(2)}
+                                <span className="text-xs text-neutral-500 ml-1">KM</span>
+                            </span>
+                        </div>
+                        <div className="flex-1 p-4 flex flex-col items-center">
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-1">Duration</span>
+                            <span className="text-xl font-mono text-white leading-none">
+                                {Math.floor(((selectedTrek.endTime || Date.now()) - selectedTrek.startTime) / 60000)}
+                                <span className="text-xs text-neutral-500 ml-1">MIN</span>
+                            </span>
                         </div>
                     </div>
 
@@ -208,6 +222,18 @@ export function LibraryScreen() {
                                                     {point.isPublic ? <Eye size={10} /> : <EyeOff size={10} />}
                                                     {point.isPublic ? 'Public' : 'Private'}
                                                 </span>
+                                                {point.trekId && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedTrekId(point.trekId ?? null);
+                                                            setActiveTab('treks');
+                                                        }}
+                                                        className="px-2 py-0.5 bg-orange-500/10 text-orange-500 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 hover:bg-orange-500/20"
+                                                    >
+                                                        <MapIcon size={10} />
+                                                        {treks.find(t => t.id === point.trekId)?.name || 'Linked Trek'}
+                                                    </button>
+                                                )}
                                             </div>
                                             <p className="text-white text-sm truncate font-medium mb-1">{point.notes || 'Untitled Point'}</p>
                                             <div className="text-[10px] text-neutral-500 font-mono">

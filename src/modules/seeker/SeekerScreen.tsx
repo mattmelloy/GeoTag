@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type WebPoint } from '../../db/db';
 import { useTracker } from '../../context/TrackerContext';
 import { distance } from '../map/mapService';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, Compass } from 'lucide-react';
 import clsx from 'clsx';
 
 export function SeekerScreen() {
@@ -39,8 +39,44 @@ export function SeekerScreen() {
         return () => window.removeEventListener('deviceorientation', handleOrientation);
     }, []);
 
-    if (!id || target === undefined) return <div className="p-10 text-center">Loading...</div>;
-    if (target === null) return <div className="p-10 text-center">Target not found.</div>;
+    if (!id) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-10 text-center bg-neutral-900">
+                <Compass className="text-neutral-700 mb-6" size={80} strokeWidth={1} />
+                <h2 className="text-xl font-bold text-white mb-2">No Target Selected</h2>
+                <p className="text-neutral-500 text-sm mb-8 max-w-xs">
+                    Select a point from your Library or the Map to use the Seeker's digital compass.
+                </p>
+                <button
+                    onClick={() => navigate('/library')}
+                    className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-bold active:scale-95 transition"
+                >
+                    Open Library
+                </button>
+            </div>
+        );
+    }
+
+    if (target === undefined) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center bg-neutral-900">
+                <div className="w-12 h-12 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-neutral-500 font-medium">Acquiring Target...</p>
+            </div>
+        );
+    }
+
+    if (target === null) {
+        return (
+            <div className="h-full flex flex-col items-center justify-center p-10 text-center bg-neutral-900">
+                <h2 className="text-xl font-bold text-red-500 mb-2">Target Lost</h2>
+                <p className="text-neutral-500 text-sm mb-8">
+                    This point may have been deleted or moved.
+                </p>
+                <button onClick={() => navigate('/library')} className="text-[var(--color-primary)] font-bold">Return to Library</button>
+            </div>
+        );
+    }
 
     // Calculate Bearing and Distance
     let dist = 0;
