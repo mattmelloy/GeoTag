@@ -35,7 +35,9 @@ export function TrekControls() {
     }, [isTracking, stats.startTime]);
 
     const handleStopClick = () => {
-        setTrekName(`Trek ${new Date().toLocaleDateString()}`);
+        const now = new Date();
+        const defaultName = `Trek ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+        setTrekName(defaultName);
         setShowStopModal(true);
     };
 

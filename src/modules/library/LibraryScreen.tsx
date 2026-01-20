@@ -275,7 +275,9 @@ export function LibraryScreen() {
                                     <MapIcon size={24} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-white font-bold text-sm truncate uppercase tracking-tight">{trek.name || `Trek ${new Date(trek.startTime).toLocaleDateString()}`}</h3>
+                                    <h3 className="text-white font-bold text-sm truncate uppercase tracking-tight">
+                                        {trek.name || `Trek ${new Date(trek.startTime).toLocaleDateString()} ${new Date(trek.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                                    </h3>
                                     <div className="flex gap-4 text-[10px] text-neutral-500 font-mono mt-1">
                                         <span>{((trek.distance || 0) / 1000).toFixed(2)} KM</span>
                                         <span>{Math.round(((trek.endTime || Date.now()) - trek.startTime) / 60000)} MINS</span>
