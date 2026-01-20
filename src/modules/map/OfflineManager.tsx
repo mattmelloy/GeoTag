@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import { RegionSelector } from './RegionSelector';
 import { useLiveQuery } from 'dexie-react-hooks';
 import L from 'leaflet';
+import { SavedRegionsLayer } from './SavedRegionsLayer';
 
 export function OfflineManager() {
     const map = useMap();
@@ -157,6 +158,10 @@ export function OfflineManager() {
         <>
             {activeTab === 'download' && isOpen && (
                 <RegionSelector onBoundsChange={setBounds => setSelectionBounds(setBounds)} />
+            )}
+
+            {activeTab === 'manage' && isOpen && (
+                <SavedRegionsLayer />
             )}
 
             <div className="absolute top-4 right-4 z-[400] w-80 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">

@@ -11,3 +11,16 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+/* Leaflet Tooltip Customization */
+.region-label-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: white !important;
+  font-weight: bold !important;
+  padding: 0 !important;
+}
+
+.leaflet-tooltip-pane .region-label-tooltip::before {
+  display: none !important;
+}

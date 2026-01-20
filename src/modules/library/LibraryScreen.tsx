@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { Trash2, Navigation, MapPin, HardDrive, Edit2, Check, X as Close, Eye, EyeOff, Map as MapIcon, ChevronRight } from 'lucide-react';
+import { Trash2, Navigation, MapPin, HardDrive, Edit2, Check, X as Close, Eye, EyeOff, Map as MapIcon, ChevronRight, Download, Calendar, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
@@ -19,6 +19,7 @@ export function LibraryScreen() {
     const [editNotes, setEditNotes] = useState('');
     const [editTags, setEditTags] = useState('');
     const [editPublic, setEditPublic] = useState(false);
+    const [selectedPointId, setSelectedPointId] = useState<number | null>(null);
     const [storageUsage, setStorageUsage] = useState<string>('');
 
     useEffect(() => {
@@ -61,7 +62,19 @@ export function LibraryScreen() {
         setEditingId(null);
     };
 
+    const handleDownloadPhoto = (photo: Blob, filename: string) => {
+        const url = URL.createObjectURL(photo);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     const selectedTrek = treks?.find(t => t.id === selectedTrekId);
+    const selectedPoint = points?.find(p => p.id === selectedPointId);
     const trekPoints = points?.filter(p => p.trekId === selectedTrekId);
 
     if (!points || !treks) return <div className="p-10 text-center text-white">Loading...</div>;
@@ -123,8 +136,11 @@ export function LibraryScreen() {
                                 <div className="text-neutral-600 italic text-sm">No items captured during this trek.</div>
                             )}
                             {trekPoints?.map(point => (
-                                <div key={point.id} className="bg-neutral-800 rounded-xl p-3 flex gap-3 border border-neutral-700">
-                                    <div className="w-12 h-12 bg-neutral-700 rounded flex items-center justify-center text-neutral-500 overflow-hidden">
+                                <div
+                                    onClick={() => setSelectedPointId(point.id!)}
+                                    className="bg-neutral-800 rounded-xl p-3 flex gap-3 border border-neutral-700 active:bg-neutral-700 transition cursor-pointer"
+                                >
+                                    <div className="w-12 h-12 bg-neutral-700 rounded flex items-center justify-center text-neutral-500 overflow-hidden shrink-0">
                                         {point.photo ? <img src={URL.createObjectURL(point.photo)} className="w-full h-full object-cover" /> : <MapPin size={20} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -136,7 +152,7 @@ export function LibraryScreen() {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => navigate(`/seeker?id=${point.id}`)}
+                                        onClick={(e) => { e.stopPropagation(); navigate(`/seeker?id=${point.id}`); }}
                                         className="self-center bg-neutral-700 p-2 rounded-lg text-neutral-300 active:scale-95"
                                     >
                                         <Navigation size={16} />
@@ -180,7 +196,11 @@ export function LibraryScreen() {
                             <div className="text-neutral-600 text-center py-10 italic">No points captured yet.</div>
                         )}
                         {points.map(point => (
-                            <div key={point.id} className={clsx("bg-neutral-800 rounded-xl p-4 flex gap-4 border transition-colors", editingId === point.id ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]" : "border-neutral-700")}>
+                            <div
+                                key={point.id}
+                                onClick={() => editingId !== point.id && setSelectedPointId(point.id!)}
+                                className={clsx("bg-neutral-800 rounded-xl p-4 flex gap-4 border transition-colors cursor-pointer active:bg-neutral-750", editingId === point.id ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]" : "border-neutral-700")}
+                            >
                                 <div className="w-16 h-16 bg-neutral-700 rounded-lg shrink-0 flex items-center justify-center text-xs text-neutral-500 overflow-hidden">
                                     {point.photo ? (
                                         <img src={URL.createObjectURL(point.photo)} className="w-full h-full object-cover" alt="Point" />
@@ -191,7 +211,7 @@ export function LibraryScreen() {
 
                                 <div className="flex-1 min-w-0">
                                     {editingId === point.id ? (
-                                        <div className="space-y-2">
+                                        <div className="space-y-2" onClick={e => e.stopPropagation()}>
                                             <textarea
                                                 className="w-full bg-neutral-900 text-white text-sm p-3 rounded border border-neutral-700 focus:border-[var(--color-primary)] outline-none resize-none"
                                                 rows={2}
@@ -224,7 +244,8 @@ export function LibraryScreen() {
                                                 </span>
                                                 {point.trekId && (
                                                     <button
-                                                        onClick={() => {
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
                                                             setSelectedTrekId(point.trekId ?? null);
                                                             setActiveTab('treks');
                                                         }}
@@ -243,7 +264,7 @@ export function LibraryScreen() {
                                     )}
                                 </div>
 
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
                                     {editingId === point.id ? (
                                         <>
                                             <button onClick={() => handleSavePoint(point.id!)} className="bg-green-600 text-white p-2 rounded-lg"><Check size={18} /></button>
@@ -299,6 +320,83 @@ export function LibraryScreen() {
             {storageUsage && (
                 <div className="p-4 bg-neutral-900 border-t border-neutral-800 flex items-center justify-center gap-2 text-[10px] text-neutral-600 uppercase font-bold tracking-widest">
                     <HardDrive size={10} /> Storage Usage: {storageUsage}
+                </div>
+            )}
+
+            {/* Point Detail Modal */}
+            {selectedPoint && (
+                <div className="fixed inset-0 z-[2000] bg-black/95 flex flex-col pt-12">
+                    <div className="flex justify-between items-center px-6 mb-6">
+                        <h2 className="text-xl font-bold text-white truncate max-w-[70%]">{selectedPoint.notes || 'Point Detail'}</h2>
+                        <button onClick={() => setSelectedPointId(null)} className="bg-neutral-800 p-2 rounded-full text-white">
+                            <Close size={24} />
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto px-6 pb-20">
+                        {selectedPoint.photo ? (
+                            <div className="relative group mb-8">
+                                <img
+                                    src={URL.createObjectURL(selectedPoint.photo)}
+                                    className="w-full rounded-2xl shadow-2xl border border-neutral-800"
+                                    alt="Capture"
+                                />
+                                <button
+                                    onClick={() => handleDownloadPhoto(selectedPoint.photo!, `geotrek_${selectedPoint.id}.jpg`)}
+                                    className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-xl flex items-center gap-2 font-bold text-sm border border-neutral-700 active:scale-95 transition"
+                                >
+                                    <Download size={18} /> Download
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="aspect-square bg-neutral-800 rounded-2xl flex items-center justify-center text-neutral-600 mb-8 border border-neutral-700">
+                                <MapPin size={64} />
+                            </div>
+                        )}
+
+                        <div className="space-y-6">
+                            <div className="flex flex-wrap gap-2">
+                                {selectedPoint.tags.map(tag => (
+                                    <span key={tag} className="bg-neutral-800 px-3 py-1 rounded-full text-xs font-bold text-neutral-400 uppercase flex items-center gap-2">
+                                        <Tag size={12} /> {tag}
+                                    </span>
+                                ))}
+                                <span className={clsx("px-3 py-1 rounded-full text-xs font-bold uppercase", selectedPoint.isPublic ? "bg-green-500/10 text-green-500" : "bg-neutral-800 text-neutral-500")}>
+                                    {selectedPoint.isPublic ? 'Public' : 'Private'}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-neutral-800/50 p-4 rounded-2xl border border-neutral-800">
+                                    <div className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-1 flex items-center gap-1"><Calendar size={10} /> Captured</div>
+                                    <div className="text-sm font-mono text-white">{new Date(selectedPoint.timestamp).toLocaleDateString()}</div>
+                                    <div className="text-xs text-neutral-500">{new Date(selectedPoint.timestamp).toLocaleTimeString()}</div>
+                                </div>
+                                <div className="bg-neutral-800/50 p-4 rounded-2xl border border-neutral-800">
+                                    <div className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-1 flex items-center gap-1"><MapPin size={10} /> Location</div>
+                                    <div className="text-sm font-mono text-white truncate">{selectedPoint.lat.toFixed(6)}, {selectedPoint.lng.toFixed(6)}</div>
+                                    <div className="text-xs text-neutral-500">±{Math.round(selectedPoint.accuracy)}m accuracy</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-800/30 p-4 rounded-2xl border border-neutral-800 mt-2">
+                                <div className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2">Notes</div>
+                                <p className="text-neutral-300 text-sm leading-relaxed italic">
+                                    {selectedPoint.notes || 'No notes provided for this capture.'}
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    navigate(`/seeker?id=${selectedPoint.id}`);
+                                    setSelectedPointId(null);
+                                }}
+                                className="w-full bg-[var(--color-primary)] text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg active:scale-[0.98] transition mt-4"
+                            >
+                                <Navigation size={20} /> NAVIGATE TO POINT
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
