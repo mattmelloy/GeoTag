@@ -11,6 +11,7 @@ export function CaptureScreen() {
     const navigate = useNavigate();
     const [notes, setNotes] = useState('');
     const [tags, setTags] = useState<string[]>([]);
+    const [isPublic, setIsPublic] = useState(false);
 
     // In a real app, we'd handle file input for camera
     // Here we'll mock it or use a simple file input
@@ -32,6 +33,7 @@ export function CaptureScreen() {
             timestamp: Date.now(),
             notes,
             tags,
+            isPublic,
             // Simple placeholder storage for now
             // In real app, we might store blob directly (Dexie supports it)
             // or just the metadata.
@@ -88,6 +90,28 @@ export function CaptureScreen() {
                                 {tag}
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                {/* Privacy Toggle */}
+                <div className="bg-neutral-800 p-4 rounded-xl border border-neutral-700">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="text-white font-bold text-sm">Public Visibility</h4>
+                            <p className="text-neutral-500 text-xs">Allow others to see this point</p>
+                        </div>
+                        <button
+                            onClick={() => setIsPublic(!isPublic)}
+                            className={clsx(
+                                "w-12 h-6 rounded-full p-1 transition-colors duration-200 outline-none",
+                                isPublic ? "bg-green-500" : "bg-neutral-600"
+                            )}
+                        >
+                            <div className={clsx(
+                                "w-4 h-4 bg-white rounded-full transition-transform duration-200",
+                                isPublic ? "translate-x-6" : "translate-x-0"
+                            )} />
+                        </button>
                     </div>
                 </div>
 

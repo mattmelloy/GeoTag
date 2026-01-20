@@ -18,6 +18,7 @@ export interface WebPoint {
     notes?: string;
     tags: string[];
     photo?: Blob;
+    isPublic: boolean;
 }
 
 export class GeoTrekDB extends Dexie {
