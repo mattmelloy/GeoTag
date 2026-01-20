@@ -18,35 +18,36 @@ function formatDistance(meters: number) {
 
 export function TrekControls() {
     const { isTracking, startTrek, stopTrek, stats } = useTracker();
+    const [trekName, setTrekName] = useState('');
+    const [showStopModal, setShowStopModal] = useState(false);
 
     // Ticking hook for duration
-    const [, setTick] = useState(0);
+    const [elapsed, setElapsed] = useState(0);
     useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 1000);
+        if (!isTracking || !stats.startTime) {
+            setElapsed(0);
+            return;
+        }
+        const interval = setInterval(() => {
+            setElapsed(Date.now() - stats.startTime!);
+        }, 1000);
         return () => clearInterval(interval);
-    }, []);
+    }, [isTracking, stats.startTime]);
 
-    // Real duration is based on "duration" from context + elapsed since last render if needed,
-    // but simpler to just strictly use context stats if context updated frequently.
-    // Wait, context stats.duration is derived from Date.now() in render.
-    // So causing re-render here triggers re-calculation in context? 
-    // No, context value is memoized or stable unless state changes.
-    // The context needs to expose startTime to let consumer tick.
-    // Actually, context.stats.duration is just (now - start) calculated at render time of Provider?
-    // Let's rely on Context logic updates? 
-    // No, TrackerContext updates on position change.
-    // We need a visual tick.
-    // I should persist startTime in context and expose it, or just use the static duration which only updates when user moves.
-    // User moves = update. Static when standing?
-    // Ideally, timer keeps ticking.
-    // I will check context implementation. It passes `duration: startTime ? Date.now() - startTime : 0`.
-    // So if I force re-render accessing `stats`, it won't update unless Context re-renders.
-    // Context only re-renders on state change (location update).
-    // So time will appear frozen when not moving.
-    // I should expose `startTime` from context instead of `duration` to allow UI to tick.
+    const handleStopClick = () => {
+        setTrekName(`Trek ${new Date().toLocaleDateString()}`);
+        setShowStopModal(true);
+    };
 
-    // I'll stick to basic implementation and fix later if needed, or update Context now.
-    // Updating Context is better.
+    const confirmStop = () => {
+        // We need to pass the name to stopTrek or update the DB after.
+        // Let's modify stopTrek to take a name, or just do it here.
+        // I'll update the stopTrek in Context potentially, but simpler to just 
+        // call stopTrek and then an immediate update.
+        // Actually, let's update stopTrek in context to accept a name.
+        (stopTrek as any)(trekName);
+        setShowStopModal(false);
+    };
 
     if (!isTracking) {
         return (
@@ -61,29 +62,55 @@ export function TrekControls() {
     }
 
     return (
-        <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2 pointer-events-none">
-            <div className="bg-neutral-900/90 border border-neutral-800 p-3 rounded-lg shadow-xl backdrop-blur-sm pointer-events-auto min-w-[200px]">
-                <div className="flex justify-between items-center mb-2">
-                    <div className="flex items-center gap-2 text-[var(--color-primary)] font-bold uppercase text-xs tracking-wider">
-                        <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
-                        Recording
+        <>
+            <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2 pointer-events-none">
+                <div className="bg-neutral-900/95 border border-neutral-800 p-3 rounded-lg shadow-2xl backdrop-blur-md pointer-events-auto min-w-[220px]">
+                    <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2 text-[var(--color-primary)] font-bold uppercase text-[10px] tracking-widest">
+                            <span className="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+                            Live Content
+                        </div>
+                        <button onClick={handleStopClick} className="bg-red-500 text-white p-1.5 rounded-lg hover:bg-red-600 transition active:scale-90">
+                            <Square size={16} fill="currentColor" />
+                        </button>
                     </div>
-                    <button onClick={stopTrek} className="bg-red-500/20 text-red-500 p-1.5 rounded hover:bg-red-500/30 transition">
-                        <Square size={16} fill="currentColor" />
-                    </button>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <div className="text-neutral-500 text-[10px] uppercase font-bold">Distance</div>
-                        <div className="text-xl font-mono text-neutral-100">{formatDistance(stats.distance)}</div>
-                    </div>
-                    <div>
-                        <div className="text-neutral-500 text-[10px] uppercase font-bold">Duration</div>
-                        <div className="text-xl font-mono text-neutral-100">{formatDuration(stats.duration)}</div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-tight">Distance</div>
+                            <div className="text-xl font-mono text-neutral-100">{formatDistance(stats.distance)}</div>
+                        </div>
+                        <div>
+                            <div className="text-neutral-500 text-[10px] uppercase font-bold tracking-tight">Duration</div>
+                            <div className="text-xl font-mono text-neutral-100">{formatDuration(elapsed || stats.duration)}</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Stop Modal */}
+            {showStopModal && (
+                <div className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+                    <div className="bg-neutral-900 border border-neutral-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-2">Finish Trek</h3>
+                        <p className="text-neutral-400 text-sm mb-6">Give your adventure a name to save it to your history.</p>
+
+                        <div className="space-y-4">
+                            <input
+                                type="text"
+                                value={trekName}
+                                onChange={e => setTrekName(e.target.value)}
+                                className="w-full bg-neutral-800 text-white p-3 rounded-xl border border-neutral-700 outline-none focus:border-[var(--color-primary)]"
+                                autoFocus
+                            />
+                            <div className="flex gap-3 mt-8">
+                                <button onClick={() => setShowStopModal(false)} className="flex-1 py-3 text-neutral-400 font-bold bg-neutral-800 rounded-xl">Discard</button>
+                                <button onClick={confirmStop} className="flex-1 py-3 bg-[var(--color-primary)] text-white font-bold rounded-xl shadow-lg ring-[var(--color-primary)]">Save Trek</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

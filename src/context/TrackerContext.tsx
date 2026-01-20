@@ -12,11 +12,12 @@ interface Location {
 
 interface TrackerContextType {
     isTracking: boolean;
+    activeTrekId: number | null;
     currentLocation: Location | null;
     path: [number, number][];
     startTrek: () => void;
     stopTrek: () => void;
-    stats: { distance: number; duration: number }; // meters, ms
+    stats: { distance: number; duration: number; startTime: number | null };
 }
 
 const TrackerContext = createContext<TrackerContextType | null>(null);
@@ -29,6 +30,7 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
 
     const watchId = useRef<number | null>(null);
     const trekId = useRef<number | null>(null);
+    const [activeTrekId, setActiveTrekId] = useState<number | null>(null);
 
     // Stats
     const [dist, setDist] = useState(0);
@@ -39,25 +41,28 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
         setDist(0);
         setStartTime(Date.now());
 
-        // Create trek in DB
         const id = await db.treks.add({
             startTime: Date.now(),
             path: [],
             synced: false
         });
         trekId.current = id as number;
+        setActiveTrekId(id as number);
     };
 
-    const stopTrek = () => {
+    const stopTrek = (name?: string) => {
         setIsTracking(false);
         if (trekId.current && startTime) {
             db.treks.update(trekId.current, {
+                name: typeof name === 'string' ? name : `Trek ${new Date().toLocaleDateString()}`,
                 endTime: Date.now(),
-                path: path // Save final path
+                path: path,
+                distance: dist
             });
         }
         setStartTime(null);
         trekId.current = null;
+        setActiveTrekId(null);
     };
 
     // Tracking logic
@@ -106,11 +111,16 @@ export function TrackerProvider({ children }: { children: ReactNode }) {
     return (
         <TrackerContext.Provider value={{
             isTracking,
+            activeTrekId,
             currentLocation,
             path,
             startTrek,
             stopTrek,
-            stats: { distance: dist, duration: startTime ? Date.now() - startTime : 0 }
+            stats: {
+                distance: dist,
+                duration: startTime ? Date.now() - startTime : 0,
+                startTime
+            }
         }}>
             {children}
         </TrackerContext.Provider>

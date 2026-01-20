@@ -6,11 +6,13 @@ export interface Trek {
     startTime: number;
     endTime?: number;
     path: [number, number][]; // [[lat, lng]]
+    distance?: number; // meters
     synced: boolean;
 }
 
 export interface WebPoint {
     id?: number;
+    trekId?: number; // Optional link to a trek
     lat: number;
     lng: number;
     accuracy: number;

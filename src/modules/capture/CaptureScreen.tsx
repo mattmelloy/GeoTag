@@ -1,21 +1,21 @@
-import { useState } from 'react';
-import { Camera, MapPin } from 'lucide-react';
+import { Camera, MapPin, X } from 'lucide-react';
 import { useTracker } from '../../context/TrackerContext';
 import { db } from '../../db/db';
 import { AccuracyMeter } from './AccuracyMeter';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { CameraModule } from './CameraModule';
 
 export function CaptureScreen() {
-    const { currentLocation } = useTracker();
+    const { currentLocation, activeTrekId } = useTracker();
     const navigate = useNavigate();
     const [notes, setNotes] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [isPublic, setIsPublic] = useState(false);
-
-    // In a real app, we'd handle file input for camera
-    // Here we'll mock it or use a simple file input
-    const [photo] = useState<Blob | null>(null); // Placeholder
+    const [photo, setPhoto] = useState<Blob | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
 
     const availableTags = ['Nature', 'Man-made', 'Scenery', 'Hazard', 'Water'];
 
@@ -23,10 +23,25 @@ export function CaptureScreen() {
         setTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
     };
 
+    const handleCapture = (blob: Blob) => {
+        setPhoto(blob);
+        const url = URL.createObjectURL(blob);
+        setPhotoPreview(url);
+        setIsCameraOpen(false);
+    };
+
+    const removePhoto = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (photoPreview) URL.revokeObjectURL(photoPreview);
+        setPhoto(null);
+        setPhotoPreview(null);
+    };
+
     const handleSave = async () => {
         if (!currentLocation) return;
 
         await db.points.add({
+            trekId: activeTrekId ?? undefined,
             lat: currentLocation.lat,
             lng: currentLocation.lng,
             accuracy: currentLocation.accuracy,
@@ -34,13 +49,9 @@ export function CaptureScreen() {
             notes,
             tags,
             isPublic,
-            // Simple placeholder storage for now
-            // In real app, we might store blob directly (Dexie supports it)
-            // or just the metadata.
             photo: photo ?? undefined
         });
 
-        // Show feedback or navigate
         navigate('/library');
     };
 
@@ -55,11 +66,35 @@ export function CaptureScreen() {
             </div>
 
             <div className="space-y-6">
-                {/* Photo Placeholder */}
-                <div className="aspect-video bg-neutral-800 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-neutral-700 hover:border-neutral-500 active:bg-neutral-700 transition cursor-pointer">
-                    <Camera size={32} className="text-neutral-400 mb-2" />
-                    <span className="text-neutral-400 text-sm font-medium">Take Photo</span>
-                </div>
+                {/* Photo Capture Area */}
+                {isCameraOpen ? (
+                    <CameraModule
+                        onCapture={handleCapture}
+                        onClose={() => setIsCameraOpen(false)}
+                    />
+                ) : (
+                    <div
+                        onClick={() => setIsCameraOpen(true)}
+                        className="aspect-video bg-neutral-800 rounded-xl flex flex-col items-center justify-center border-2 border-dashed border-neutral-700 hover:border-neutral-500 active:bg-neutral-700 transition cursor-pointer overflow-hidden relative"
+                    >
+                        {photoPreview ? (
+                            <>
+                                <img src={photoPreview} className="w-full h-full object-cover" alt="Preview" />
+                                <button
+                                    onClick={removePhoto}
+                                    className="absolute top-2 right-2 bg-black/50 text-white p-1.5 rounded-full hover:bg-black/70 transition"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <Camera size={32} className="text-neutral-400 mb-2" />
+                                <span className="text-neutral-400 text-sm font-medium">Open Camera</span>
+                            </>
+                        )}
+                    </div>
+                )}
 
                 {/* Notes */}
                 <div>
@@ -132,7 +167,6 @@ export function CaptureScreen() {
                     </button>
                 </div>
             </div>
-
         </div>
     );
 }
