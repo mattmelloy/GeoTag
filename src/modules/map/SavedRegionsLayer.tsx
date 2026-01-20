@@ -1,11 +1,10 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/db';
-import { Rectangle, Tooltip, useMap } from 'react-leaflet';
+import { Rectangle, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 
 export function SavedRegionsLayer() {
     const regions = useLiveQuery(() => db.regions.toArray());
-    const map = useMap();
 
     if (!regions) return null;
 
